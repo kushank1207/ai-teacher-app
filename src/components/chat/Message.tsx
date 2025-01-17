@@ -25,7 +25,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
         <ReactMarkdown
           className={`markdown ${isUser ? 'text-white' : 'text-gray-900'}`}
           components={{
-            code: ({ node, inline, className, children, ...props }) => {
+            code: ({ inline, children, ...props }) => {
               if (inline) {
                 return (
                   <code 

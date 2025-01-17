@@ -17,9 +17,10 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   const totalTopics = Object.values(PYTHON_TOPICS)
     .reduce((acc, section) => acc + section.topics.length, 0);
 
-  const progress = (completedTopics.length / totalTopics) * 100;
+  // const progress = (completedTopics.length / totalTopics) * 100;
 
   // Count topics per section
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const sectionProgress = Object.entries(PYTHON_TOPICS).map(([key, section]) => {
     const sectionTopics = section.topics.length;
     const completedInSection = section.topics.filter(

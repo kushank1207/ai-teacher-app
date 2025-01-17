@@ -7,12 +7,12 @@ import MessageList from "./MessageList";
 import InputForm from "./InputForm";
 import ProgressBar from "./ProgressBar";
 import TopicCard from "@/components/ui/topic-card";
-import { MessageSkeleton, TopicSkeleton } from "@/components/ui/loading";
+import { MessageSkeleton } from "@/components/ui/loading";
 import { Bot, Cpu, MenuIcon, X } from "lucide-react";
 import { PYTHON_TOPICS } from "@/lib/constants";
 
 const ChatInterface: React.FC = () => {
-  const { messages, isLoading, messageCount, addMessage } = useChatStore();
+  const { messages, isLoading, addMessage } = useChatStore();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -110,7 +110,7 @@ const ChatInterface: React.FC = () => {
 
           {/* Progress Section */}
           <div className="p-4 border-t">
-            <ProgressBar messageCount={messageCount} />
+            <ProgressBar />
           </div>
         </div>
       </div>
