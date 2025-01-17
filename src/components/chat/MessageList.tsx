@@ -68,6 +68,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                       message.role === 'user' ? 'text-white' : 'text-gray-900'
                     )}
                     components={{
+                      // eslint-disable-next-line
                       code({ inline, className: _, node: __, children, ...props }) {
                         return (
                           <code

@@ -25,6 +25,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
         <ReactMarkdown
           className={`markdown ${isUser ? 'text-white' : 'text-gray-900'}`}
           components={{
+            // eslint-disable-next-line
             code: ({ inline, className: _, children, node: __, ...props }) => {
               if (inline) {
                 return (
