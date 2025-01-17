@@ -68,7 +68,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                       message.role === 'user' ? 'text-white' : 'text-gray-900'
                     )}
                     components={{
-                      code({ node, inline, className, children, ...props }) {
+                      code({ inline, className: _, node: __, children, ...props }) {
                         return (
                           <code
                             className={cn(
