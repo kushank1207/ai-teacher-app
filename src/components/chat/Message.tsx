@@ -1,52 +1,74 @@
+// src/components/chat/Message.tsx
+
 "use client";
 
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import { Message as MessageType } from '@/types/chat';
+import React from "react";
+import ReactMarkdown, { Components } from "react-markdown";
+import { Message as MessageType } from "@/types/chat";
+import { cn } from "@/lib/utils";
 
 interface MessageProps {
   message: MessageType;
 }
 
+// Define the props for the custom code component
+interface CodeComponentProps {
+  inline?: boolean;
+  className?: string;
+  children?: React.ReactNode; // Made optional
+  [key: string]: any; // Allow additional props
+}
+
 const Message: React.FC<MessageProps> = ({ message }) => {
-  const isUser = message.role === 'user';
+  const isUser = message.role === "user";
+
+  const CodeComponent: React.FC<CodeComponentProps> = ({
+    inline,
+    className,
+    children,
+    ...props
+  }) => {
+    if (inline) {
+      return (
+        <code
+          className={cn(
+            "px-1 py-0.5 rounded",
+            isUser ? "bg-blue-600" : "bg-gray-700",
+            "text-white"
+          )}
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    }
+    return (
+      <pre className="p-4 bg-gray-800 text-white rounded-lg overflow-x-auto my-2">
+        <code {...props}>{children}</code>
+      </pre>
+    );
+  };
+
+  const components: Components = {
+    code: CodeComponent,
+    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+    ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+    ol: ({ children }) => (
+      <ol className="list-decimal ml-4 mb-2">{children}</ol>
+    ),
+  };
 
   return (
-    <div
-      className={`flex ${
-        isUser ? 'justify-end' : 'justify-start'
-      } mb-4`}
-    >
+    <div className={cn("flex mb-4", isUser ? "justify-end" : "justify-start")}>
       <div
-        className={`max-w-[80%] rounded-lg p-4 ${
-          isUser ? 'bg-blue-500 text-white' : 'bg-gray-100'
-        }`}
+        className={cn(
+          "max-w-[80%] rounded-lg p-4",
+          isUser ? "bg-blue-500 text-white" : "bg-gray-100"
+        )}
       >
         <ReactMarkdown
-          className={`markdown ${isUser ? 'text-white' : 'text-gray-900'}`}
-          components={{
-            // eslint-disable-next-line
-            code: ({ inline, className: _, children, node: __, ...props }) => {
-              if (inline) {
-                return (
-                  <code 
-                    className={`px-1 py-0.5 ${isUser ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded`} 
-                    {...props}
-                  >
-                    {children}
-                  </code>
-                );
-              }
-              return (
-                <pre className="p-4 bg-gray-800 text-white rounded-lg overflow-x-auto my-2">
-                  <code {...props}>{children}</code>
-                </pre>
-              );
-            },
-            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-            ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
-            ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
-          }}
+          className={cn("markdown", isUser ? "text-white" : "text-gray-900")}
+          components={components}
         >
           {message.content}
         </ReactMarkdown>

@@ -1,23 +1,51 @@
-'use client';
+// src/components/chat/MessageList.tsx
 
-import React, { useRef, useEffect } from 'react';
-import { Message as MessageType } from '@/types/chat';
-import { Bot, User } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import { cn } from '@/lib/utils';
+"use client";
+
+import React, { useRef, useEffect } from "react";
+import { Message } from "@/store/chatStore";
+import { Bot, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import { cn } from "@/lib/utils";
 
 interface MessageListProps {
-  messages: MessageType[];
+  messages: Message[];
   isLoading: boolean;
 }
+
+// Define the props for the custom code component
+interface CodeComponentProps {
+  inline?: boolean;
+  className?: string;
+  children?: React.ReactNode; // Made optional
+  [key: string]: any; // Allow additional props
+}
+
+const CodeComponent: React.FC<CodeComponentProps> = ({
+  inline,
+  children,
+  ...props
+}) => {
+  return (
+    <code
+      className={cn(
+        "px-1 py-0.5 rounded font-mono text-sm",
+        inline
+          ? "text-gray-900 bg-gray-100"
+          : "block bg-gray-800 text-gray-50 p-4 my-2 rounded-lg overflow-x-auto"
+      )}
+      {...props}
+    >
+      {children}
+    </code>
+  );
+};
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -40,52 +68,38 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
               key={message.id}
               className={cn(
                 "flex items-start space-x-3",
-                message.role === 'user' ? 'justify-end' : 'justify-start'
+                message.role === "user" ? "justify-end" : "justify-start"
               )}
             >
-              {/* Bot avatar for both assistant and system messages */}
-              {(message.role === 'assistant' || message.role === 'system') && (
+              {(message.role === "assistant" || message.role === "system") && (
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                     <Bot className="w-5 h-5 text-blue-600" />
                   </div>
                 </div>
               )}
-              
-              <div className={cn(
-                "flex flex-col max-w-[70%] space-y-2",
-                message.role === 'user' ? 'items-end' : 'items-start'
-              )}>
-                <div className={cn(
-                  "rounded-2xl px-4 py-2",
-                  message.role === 'user' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-white border shadow-sm'
-                )}>
+
+              <div
+                className={cn(
+                  "flex flex-col max-w-[70%] space-y-2",
+                  message.role === "user" ? "items-end" : "items-start"
+                )}
+              >
+                <div
+                  className={cn(
+                    "rounded-2xl px-4 py-2",
+                    message.role === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-white border shadow-sm"
+                  )}
+                >
                   <ReactMarkdown
                     className={cn(
-                      'prose prose-sm max-w-none',
-                      message.role === 'user' ? 'text-white' : 'text-gray-900'
+                      "prose prose-sm max-w-none",
+                      message.role === "user" ? "text-white" : "text-gray-900"
                     )}
                     components={{
-                      // eslint-disable-next-line
-                      code({ inline, className: _, node: __, children, ...props }) {
-                        return (
-                          <code
-                            className={cn(
-                              "px-1 py-0.5 rounded font-mono text-sm",
-                              inline 
-                                ? message.role === 'user' 
-                                  ? 'bg-blue-400 text-white'
-                                  : 'bg-gray-100 text-gray-900'
-                                : 'block bg-gray-800 text-gray-50 p-4 my-2 rounded-lg overflow-x-auto'
-                            )}
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        );
-                      },
+                      code: CodeComponent, // Use the correctly typed CodeComponent
                     }}
                   >
                     {message.content}
@@ -93,7 +107,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                 </div>
               </div>
 
-              {message.role === 'user' && (
+              {message.role === "user" && (
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                     <User className="w-5 h-5 text-gray-600" />
@@ -102,7 +116,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
               )}
             </div>
           ))}
-
           {isLoading && (
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">

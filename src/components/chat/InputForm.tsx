@@ -1,24 +1,24 @@
-// src/components/chat/InputForm.tsx
 "use client";
 
 import React, { useState } from "react";
 import { Send } from "lucide-react";
-import { useChatStore } from "@/store/chatStore";
+import { useChatStore, Message } from "@/store/chatStore";
 
 const InputForm = () => {
   const [input, setInput] = useState("");
-  const { addMessage, isLoading } = useChatStore();
+  const { addMessage, isLoading, setLoading, setError } = useChatStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = {
+    const userMessage: Message = {
       role: "user",
       content: input.trim(),
       id: Date.now().toString(),
     };
 
+    setLoading(true);
     addMessage(userMessage);
     setInput("");
 
@@ -33,19 +33,21 @@ const InputForm = () => {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to fetch response");
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to fetch response");
+      }
 
-      // Start reading the stream
-      const reader = response.body?.getReader();
+      const reader = response.body.getReader();
       let accumulatedResponse = "";
 
-      // Add initial assistant message
       const assistantMessageId = Date.now().toString();
-      addMessage({
+      const initialAssistantMessage: Message = {
         role: "assistant",
         content: "",
         id: assistantMessageId,
-      });
+      };
+
+      addMessage(initialAssistantMessage);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -54,19 +56,28 @@ const InputForm = () => {
         const text = new TextDecoder().decode(value);
         accumulatedResponse += text;
 
-        addMessage({
+        const updatedMessage: Message = {
           role: "assistant",
           content: accumulatedResponse,
           id: assistantMessageId,
-        });
+        };
+
+        addMessage(updatedMessage);
       }
+      setError(null);
     } catch (error) {
       console.error("Error:", error);
-      addMessage({
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
+      setError(errorMessage);
+      const assistantMessage: Message = {
         role: "assistant",
         content: "Sorry, I encountered an error. Please try again.",
         id: Date.now().toString(),
-      });
+      };
+      addMessage(assistantMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
