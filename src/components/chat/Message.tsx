@@ -12,11 +12,9 @@ interface MessageProps {
 }
 
 // Define the props for the custom code component
-interface CodeComponentProps {
+interface CodeComponentProps extends React.HTMLAttributes<HTMLElement> {
   inline?: boolean;
-  className?: string;
   children?: React.ReactNode; // Made optional
-  [key: string]: any; // Allow additional props
 }
 
 const Message: React.FC<MessageProps> = ({ message }) => {
@@ -24,7 +22,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
 
   const CodeComponent: React.FC<CodeComponentProps> = ({
     inline,
-    className,
+    className, // Now used
     children,
     ...props
   }) => {
@@ -34,7 +32,8 @@ const Message: React.FC<MessageProps> = ({ message }) => {
           className={cn(
             "px-1 py-0.5 rounded",
             isUser ? "bg-blue-600" : "bg-gray-700",
-            "text-white"
+            "text-white",
+            className // Utilize className
           )}
           {...props}
         >
@@ -44,7 +43,9 @@ const Message: React.FC<MessageProps> = ({ message }) => {
     }
     return (
       <pre className="p-4 bg-gray-800 text-white rounded-lg overflow-x-auto my-2">
-        <code {...props}>{children}</code>
+        <code className={className} {...props}>
+          {children}
+        </code>
       </pre>
     );
   };

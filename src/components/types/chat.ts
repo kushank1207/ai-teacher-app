@@ -69,5 +69,4 @@ export interface MarkdownProps {
   children?: ReactNode;
   inline?: boolean;
   className?: string;
-  [key: string]: any;
 }

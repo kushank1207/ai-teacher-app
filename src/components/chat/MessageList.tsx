@@ -14,15 +14,14 @@ interface MessageListProps {
 }
 
 // Define the props for the custom code component
-interface CodeComponentProps {
+interface CodeComponentProps extends React.HTMLAttributes<HTMLElement> {
   inline?: boolean;
-  className?: string;
   children?: React.ReactNode; // Made optional
-  [key: string]: any; // Allow additional props
 }
 
 const CodeComponent: React.FC<CodeComponentProps> = ({
   inline,
+  className, // Now used
   children,
   ...props
 }) => {
@@ -32,7 +31,8 @@ const CodeComponent: React.FC<CodeComponentProps> = ({
         "px-1 py-0.5 rounded font-mono text-sm",
         inline
           ? "text-gray-900 bg-gray-100"
-          : "block bg-gray-800 text-gray-50 p-4 my-2 rounded-lg overflow-x-auto"
+          : "block bg-gray-800 text-gray-50 p-4 my-2 rounded-lg overflow-x-auto",
+        className // Utilize className
       )}
       {...props}
     >

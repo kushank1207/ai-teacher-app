@@ -37,8 +37,5 @@ module.exports = {
         'bounce-slow': 'bounce 1.5s infinite',
       },
     },
-  },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
+  }
 };
