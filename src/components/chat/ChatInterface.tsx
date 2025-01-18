@@ -1,4 +1,3 @@
-// src/components/chat/ChatInterface.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -11,6 +10,38 @@ import { MessageSkeleton } from "@/components/ui/loading";
 import { Bot, Cpu, MenuIcon, X } from "lucide-react";
 import { PYTHON_TOPICS } from "@/lib/constants";
 
+// Define TypeScript interfaces for our topic structure
+type Subtopic = string;
+
+interface Topic {
+  id: string;
+  title: string;
+  subtopics: Subtopic[];
+}
+
+interface TopicSection {
+  title: string;
+  topics: Topic[];
+}
+
+interface PythonTopics {
+  [key: string]: TopicSection;
+}
+
+// Type guard to find topic
+const findTopicById = (
+  topicId: string,
+  pythonTopics: PythonTopics
+): (Topic & { section: string }) | null => {
+  for (const section of Object.values(pythonTopics)) {
+    const topic = section.topics.find((t) => t.id === topicId);
+    if (topic) {
+      return { ...topic, section: section.title };
+    }
+  }
+  return null;
+};
+
 const ChatInterface: React.FC = () => {
   const { messages, isLoading, addMessage } = useChatStore();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
@@ -18,20 +49,11 @@ const ChatInterface: React.FC = () => {
 
   const handleTopicClick = async (topicId: string) => {
     setActiveTopic(topicId);
-    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+    setIsSidebarOpen(false);
 
-    // Find the selected topic details
-    let selectedTopic = null;
-    for (const section of Object.values(PYTHON_TOPICS)) {
-      const topic = section.topics.find((t) => t.id === topicId);
-      if (topic) {
-        selectedTopic = { ...topic, section: section.title };
-        break;
-      }
-    }
+    const selectedTopic = findTopicById(topicId, PYTHON_TOPICS);
 
     if (selectedTopic) {
-      // Add a system message to redirect the conversation
       addMessage({
         role: "system",
         content: `Let's focus on ${
@@ -40,7 +62,6 @@ const ChatInterface: React.FC = () => {
         id: Date.now().toString(),
       });
 
-      // Add an AI message to transition to the new topic
       addMessage({
         role: "assistant",
         content: `Let's explore ${selectedTopic.title}. I'll guide you through the key concepts and provide practical examples. What specific aspect of ${selectedTopic.title} would you like to understand first?`,
@@ -48,6 +69,10 @@ const ChatInterface: React.FC = () => {
       });
     }
   };
+
+  const currentTopic = activeTopic
+    ? findTopicById(activeTopic, PYTHON_TOPICS)
+    : null;
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -62,10 +87,10 @@ const ChatInterface: React.FC = () => {
       {/* Sidebar */}
       <div
         className={`
-        fixed inset-y-0 left-0 z-30 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out
-        md:relative md:translate-x-0
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-      `}
+          fixed inset-y-0 left-0 z-30 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out
+          md:relative md:translate-x-0
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
       >
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
@@ -117,8 +142,6 @@ const ChatInterface: React.FC = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-h-0">
-        {" "}
-        {/* Added min-h-0 */}
         {/* Header */}
         <header className="bg-white border-b px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -127,11 +150,7 @@ const ChatInterface: React.FC = () => {
               <div>
                 <h1 className="text-lg font-semibold">Python OOP Teacher</h1>
                 <p className="text-sm text-gray-500">
-                  {activeTopic
-                    ? Object.values(PYTHON_TOPICS)
-                        .flatMap((section) => section.topics)
-                        .find((t) => t.id === activeTopic)?.title
-                    : "Interactive Learning Session"}
+                  {currentTopic?.title || "Interactive Learning Session"}
                 </p>
               </div>
             </div>
@@ -145,10 +164,9 @@ const ChatInterface: React.FC = () => {
             )}
           </div>
         </header>
-        {/* Messages Area - Now properly scrollable */}
+
+        {/* Messages Area */}
         <div className="flex-1 overflow-hidden relative min-h-0">
-          {" "}
-          {/* Added min-h-0 */}
           <div className="absolute inset-0 overflow-y-auto">
             {isLoading && messages.length === 0 ? (
               <div className="p-4 space-y-4">
@@ -163,10 +181,9 @@ const ChatInterface: React.FC = () => {
             )}
           </div>
         </div>
+
         {/* Input Form */}
         <div className="border-t bg-white p-4 flex-shrink-0">
-          {" "}
-          {/* Added flex-shrink-0 */}
           <InputForm />
         </div>
       </div>
