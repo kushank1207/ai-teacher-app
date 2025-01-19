@@ -2,6 +2,10 @@
 
 An interactive learning platform for mastering Object-Oriented Programming in Python. Features include live chat assistance, code execution, progress tracking, and personalized learning paths.
 
+## Live Demo
+
+Access the live application here: [Python OOP Learning Platform](https://ai-teacher-app.vercel.app/)
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
