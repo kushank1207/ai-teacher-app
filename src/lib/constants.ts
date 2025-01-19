@@ -1,3 +1,5 @@
+// lib/constants.ts
+
 // Maximum messages in a conversation
 export const MAX_MESSAGES = 20;
 

@@ -1,16 +1,17 @@
+// components/chat/ChatInterface.tsx
 "use client";
 
 import React, { useState } from "react";
 import { useChatStore } from "@/store/chatStore";
 import MessageList from "./MessageList";
 import InputForm from "./InputForm";
-import ProgressBar from "./ProgressBar";
 import TopicCard from "@/components/ui/topic-card";
 import { MessageSkeleton } from "@/components/ui/loading";
-import { Bot, Cpu, MenuIcon, X } from "lucide-react";
+import { Bot, Cpu, MenuIcon, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { PYTHON_TOPICS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
-// Define TypeScript interfaces for our topic structure
+// Types remain the same
 type Subtopic = string;
 
 interface Topic {
@@ -28,7 +29,6 @@ interface PythonTopics {
   [key: string]: TopicSection;
 }
 
-// Type guard to find topic
 const findTopicById = (
   topicId: string,
   pythonTopics: PythonTopics
@@ -45,11 +45,12 @@ const findTopicById = (
 const ChatInterface: React.FC = () => {
   const { messages, isLoading, addMessage } = useChatStore();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleTopicClick = async (topicId: string) => {
     setActiveTopic(topicId);
-    setIsSidebarOpen(false);
+    setMobileSidebarOpen(false);
 
     const selectedTopic = findTopicById(topicId, PYTHON_TOPICS);
 
@@ -78,19 +79,45 @@ const ChatInterface: React.FC = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Mobile Sidebar Toggle */}
       <button
-        onClick={() => setIsSidebarOpen(true)}
+        onClick={() => setMobileSidebarOpen(true)}
         className="md:hidden fixed top-4 left-4 z-20 p-2 bg-white rounded-lg shadow-sm"
       >
         <MenuIcon className="w-6 h-6" />
       </button>
 
+      {/* Desktop Sidebar Toggle */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className={cn(
+          "hidden md:flex fixed left-0 top-1/2 -translate-y-1/2 z-30",
+          "items-center justify-center h-12 w-6",
+          "bg-white border border-l-0 rounded-r-lg",
+          "hover:bg-gray-50 transition-colors",
+          isSidebarOpen ? "left-64" : "left-0"
+        )}
+      >
+        {isSidebarOpen ? (
+          <ChevronLeft className="w-4 h-4 text-gray-600" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-gray-600" />
+        )}
+      </button>
+
       {/* Sidebar */}
       <div
-        className={`
-          fixed inset-y-0 left-0 z-30 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out
-          md:relative md:translate-x-0
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
+        className={cn(
+          "fixed inset-y-0 left-0 z-20 w-64 bg-white border-r",
+          "transform transition-transform duration-200 ease-in-out",
+          "md:transition-transform",
+          {
+            // Mobile states
+            "translate-x-0": isMobileSidebarOpen,
+            "-translate-x-full": !isMobileSidebarOpen,
+            // Desktop states
+            "md:translate-x-0": isSidebarOpen,
+            "md:-translate-x-full": !isSidebarOpen
+          }
+        )}
       >
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
@@ -100,7 +127,7 @@ const ChatInterface: React.FC = () => {
               <span className="text-xl font-bold">Python OOP</span>
             </div>
             <button
-              onClick={() => setIsSidebarOpen(false)}
+              onClick={() => setMobileSidebarOpen(false)}
               className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
             >
               <X className="w-5 h-5" />
@@ -132,16 +159,18 @@ const ChatInterface: React.FC = () => {
               ))}
             </div>
           </div>
-
-          {/* Progress Section */}
-          <div className="p-4 border-t">
-            <ProgressBar />
-          </div>
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div 
+        className={cn(
+          "flex-1 flex flex-col min-h-0 transition-[margin] duration-200 ease-in-out",
+          {
+            "md:ml-64": isSidebarOpen
+          }
+        )}
+      >
         {/* Header */}
         <header className="bg-white border-b px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -189,10 +218,10 @@ const ChatInterface: React.FC = () => {
       </div>
 
       {/* Mobile Sidebar Backdrop */}
-      {isSidebarOpen && (
+      {isMobileSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
         />
       )}
     </div>

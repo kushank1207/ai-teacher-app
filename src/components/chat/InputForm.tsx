@@ -1,12 +1,31 @@
+// components/chat/InputForm.tsx
 "use client";
 
 import React, { useState } from "react";
 import { Send } from "lucide-react";
 import { useChatStore, Message } from "@/store/chatStore";
+import { PYTHON_TOPICS } from "@/lib/constants";
 
 const InputForm = () => {
   const [input, setInput] = useState("");
-  const { addMessage, isLoading, setLoading, setError } = useChatStore();
+  const {
+    messages,
+    addMessage,
+    isLoading,
+    setLoading,
+    setError,
+    topicProgress,
+    updateSubtopicProgress,
+  } = useChatStore();
+
+  const getCurrentTopic = () => {
+    const { currentTopicId } = topicProgress;
+    if (!currentTopicId) return null;
+
+    return Object.values(PYTHON_TOPICS)
+      .flatMap((section) => section.topics)
+      .find((topic) => topic.id === currentTopicId);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,13 +42,25 @@ const InputForm = () => {
     setInput("");
 
     try {
+      const currentTopic = getCurrentTopic();
+      const subtopics = currentTopic
+        ? topicProgress.subtopicProgress[currentTopic.id] || []
+        : [];
+
+      // Get the last two messages for context
+      const recentMessages = messages.slice(-2);
+      const conversationContext = [...recentMessages, userMessage];
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: [userMessage],
+          messages: conversationContext,
+          currentTopic,
+          understanding: topicProgress.understanding,
+          subtopics,
         }),
       });
 
@@ -64,6 +95,28 @@ const InputForm = () => {
 
         addMessage(updatedMessage);
       }
+
+      // Update progress if understanding is indicated
+      if (
+        currentTopic &&
+        (accumulatedResponse.toLowerCase().includes("great!") ||
+          accumulatedResponse.toLowerCase().includes("correct!") ||
+          accumulatedResponse.toLowerCase().includes("exactly!") ||
+          accumulatedResponse.toLowerCase().includes("that's right!"))
+      ) {
+        const currentSubtopics =
+          topicProgress.subtopicProgress[currentTopic.id] || [];
+        currentSubtopics.forEach((subtopic) => {
+          if (
+            accumulatedResponse
+              .toLowerCase()
+              .includes(subtopic.name.toLowerCase())
+          ) {
+            updateSubtopicProgress(currentTopic.id, subtopic.name, true);
+          }
+        });
+      }
+
       setError(null);
     } catch (error) {
       console.error("Error:", error);
@@ -72,7 +125,8 @@ const InputForm = () => {
       setError(errorMessage);
       const assistantMessage: Message = {
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content:
+          "I apologize, but I encountered an error. Could you please try your question again?",
         id: Date.now().toString(),
       };
       addMessage(assistantMessage);
@@ -87,7 +141,7 @@ const InputForm = () => {
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Ask about Python OOP..."
+        placeholder="Ask me anything about Python..."
         className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         disabled={isLoading}
       />
