@@ -21,8 +21,8 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/python-oop-learning.git
-cd python-oop-learning
+git clone https://github.com/kushank1207/ai-teacher-app.git
+cd ai-teacher-app
 ```
 
 2. Install dependencies
