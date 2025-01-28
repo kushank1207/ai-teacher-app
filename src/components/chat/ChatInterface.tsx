@@ -11,6 +11,10 @@ import { Bot, Cpu, MenuIcon, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { PYTHON_TOPICS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
+interface ChatInterfaceProps {
+  onShowHomePage?: () => void;
+}
+
 // Types remain the same
 type Subtopic = string;
 
@@ -42,7 +46,7 @@ const findTopicById = (
   return null;
 };
 
-const ChatInterface: React.FC = () => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ onShowHomePage }) => {
   const { messages, isLoading, addMessage } = useChatStore();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -115,7 +119,7 @@ const ChatInterface: React.FC = () => {
             "-translate-x-full": !isMobileSidebarOpen,
             // Desktop states
             "md:translate-x-0": isSidebarOpen,
-            "md:-translate-x-full": !isSidebarOpen
+            "md:-translate-x-full": !isSidebarOpen,
           }
         )}
       >
@@ -163,11 +167,11 @@ const ChatInterface: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div 
+      <div
         className={cn(
           "flex-1 flex flex-col min-h-0 transition-[margin] duration-200 ease-in-out",
           {
-            "md:ml-64": isSidebarOpen
+            "md:ml-64": isSidebarOpen,
           }
         )}
       >
@@ -206,7 +210,11 @@ const ChatInterface: React.FC = () => {
                   ))}
               </div>
             ) : (
-              <MessageList messages={messages} isLoading={isLoading} />
+              <MessageList
+                messages={messages}
+                isLoading={isLoading}
+                onViewClick={onShowHomePage}
+              />
             )}
           </div>
         </div>

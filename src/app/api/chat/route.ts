@@ -1,6 +1,6 @@
 // src/app/api/chat/route.ts
-import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 interface Topic {
   id: string;
@@ -14,9 +14,14 @@ interface SubtopicProgress {
 }
 
 interface Message {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   id: string;
+}
+
+interface ProcessedResponse {
+  summary: string;
+  randomNumber: number;
 }
 
 const openai = new OpenAI({
@@ -24,8 +29,8 @@ const openai = new OpenAI({
 });
 
 const getTeachingPrompt = (
-  currentTopic: Topic | null, 
-  understanding: string, 
+  currentTopic: Topic | null,
+  understanding: string,
   subtopics: SubtopicProgress[]
 ) => {
   const basePrompt = `You are a friendly and patient Python programming teacher. Your goal is to guide students through learning Object-Oriented Programming in Python.
@@ -56,85 +61,128 @@ Teaching Style Guidelines:
 - Wait for student response before moving on
 - Provide immediate, constructive feedback
 - If student understands, offer to move to next concept
-- If student is confused, try a different explanation approach
-
-Current Teaching Context:
-- Be consistently encouraging
-- Focus on practical understanding
-- Keep explanations simple and clear
-- Use analogies to explain difficult concepts`;
+- If student is confused, try a different explanation approach`;
 
   if (currentTopic) {
     return `${basePrompt}
 
 Current Topic: ${currentTopic.title}
 Learning Stage: ${understanding}
-Subtopics to Cover: ${subtopics.map(st => st.name).join(', ')}
-Completed Subtopics: ${subtopics.filter(st => st.completed).map(st => st.name).join(', ')}
-
-Remember to:
-- Keep track of completed concepts
-- Check understanding before moving on
-- Connect new concepts to previously learned material
-- Provide encouragement and positive feedback
-- Make abstract concepts concrete through examples`;
+Subtopics to Cover: ${subtopics.map((st) => st.name).join(", ")}
+Completed Subtopics: ${subtopics
+      .filter((st) => st.completed)
+      .map((st) => st.name)
+      .join(", ")}`;
   }
 
   return basePrompt;
 };
 
-export async function POST(req: Request) {
+const getSummaryPrompt = (content: string) => {
+  return `Please provide a very concise summary (1-2 sentences) of the following teaching response, focusing on the main concepts discussed: ${content}
+  Keep your summary brief and focused on the key points.`;
+};
+
+async function processWithSecondLLM(
+  content: string
+): Promise<ProcessedResponse> {
   try {
-    const { messages, currentTopic, understanding, subtopics } = await req.json() as {
-      messages: Message[];
-      currentTopic: Topic | null;
-      understanding: string;
-      subtopics: SubtopicProgress[];
+    const summaryResponse = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: getSummaryPrompt(content),
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 100,
+    });
+
+    const randomNumber = Math.floor(Math.random() * 1000) + 1;
+
+    const processedResponse: ProcessedResponse = {
+      summary: summaryResponse.choices[0]?.message?.content || "",
+      randomNumber,
     };
 
-    // Add context to the conversation
+    return processedResponse;
+  } catch (error) {
+    console.error("Error in secondary processing:", error);
+    throw error;
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { messages, currentTopic, understanding, subtopics } =
+      (await req.json()) as {
+        messages: Message[];
+        currentTopic: Topic | null;
+        understanding: string;
+        subtopics: SubtopicProgress[];
+      };
+
     const conversationWithContext = messages.map((msg: Message) => {
-      if (msg.role === 'user') {
+      if (msg.role === "user") {
         return {
           ...msg,
-          content: `[Student Message]: ${msg.content}`
+          content: `[Student Message]: ${msg.content}`,
         };
       }
       return msg;
     });
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: "gpt-4",
       messages: [
-        { 
-          role: 'system', 
-          content: getTeachingPrompt(currentTopic, understanding, subtopics || [])
+        {
+          role: "system",
+          content: getTeachingPrompt(
+            currentTopic,
+            understanding,
+            subtopics || []
+          ),
         },
-        ...conversationWithContext
+        ...conversationWithContext,
       ],
       stream: true,
       temperature: 0.7,
       max_tokens: 800,
     });
 
+    let fullResponse = "";
+
     const stream = new ReadableStream({
       async start(controller) {
-        for await (const chunk of response) {
-          const text = chunk.choices[0]?.delta?.content || '';
-          if (text) {
-            controller.enqueue(new TextEncoder().encode(text));
+        try {
+          for await (const chunk of response) {
+            const text = chunk.choices[0]?.delta?.content || "";
+            if (text) {
+              fullResponse += text;
+              controller.enqueue(new TextEncoder().encode(text));
+            }
           }
+
+          const processedResponse = await processWithSecondLLM(fullResponse);
+          const processedMarker = `\n\n[[PROCESSED_RESPONSE:${JSON.stringify(
+            processedResponse
+          )}]]`;
+          controller.enqueue(new TextEncoder().encode(processedMarker));
+
+          controller.close();
+        } catch (error) {
+          console.error("Stream processing error:", error);
+          controller.error(error);
         }
-        controller.close();
       },
     });
 
     return new NextResponse(stream);
-
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

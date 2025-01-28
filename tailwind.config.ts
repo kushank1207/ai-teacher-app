@@ -13,6 +13,10 @@ module.exports = {
         foreground: 'hsl(var(--foreground))',
         border: 'hsl(var(--border))',
       },
+      fontFamily: {
+        helvetica: ['Helvetica Neue', 'Arial', 'sans-serif'],
+        din: ['DIN Condensed', 'sans-serif'],
+      },
       typography: {
         DEFAULT: {
           css: {

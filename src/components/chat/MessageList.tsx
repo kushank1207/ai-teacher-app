@@ -1,57 +1,140 @@
 // src/components/chat/MessageList.tsx
-
-"use client";
-
 import React, { useRef, useEffect } from "react";
 import { Message } from "@/store/chatStore";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Eye } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
+
+interface ProcessedResponse {
+  summary: string;
+  randomNumber: number;
+  originalResponse: string;
+}
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
+  onViewClick?: () => void;
 }
 
-// Define the props for the custom code component
-interface CodeComponentProps extends React.HTMLAttributes<HTMLElement> {
-  inline?: boolean;
-  children?: React.ReactNode; // Made optional
-}
-
-const CodeComponent: React.FC<CodeComponentProps> = ({
-  inline,
-  className, // Now used
-  children,
-  ...props
+const MessageList: React.FC<MessageListProps> = ({
+  messages,
+  isLoading,
+  onViewClick,
 }) => {
-  return (
-    <code
-      className={cn(
-        "px-1 py-0.5 rounded font-mono text-sm",
-        inline
-          ? "text-gray-900 bg-gray-100"
-          : "block bg-gray-800 text-gray-50 p-4 my-2 rounded-lg overflow-x-auto",
-        className // Utilize className
-      )}
-      {...props}
-    >
-      {children}
-    </code>
-  );
-};
-
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    const timeoutId = setTimeout(scrollToBottom, 100);
+    const timeoutId = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
     return () => clearTimeout(timeoutId);
   }, [messages]);
+
+  const extractProcessedResponse = (
+    content: string
+  ): {
+    displayContent: string;
+    processedResponse: ProcessedResponse | null;
+  } => {
+    const markerIndex = content.indexOf("[[PROCESSED_RESPONSE:");
+    if (markerIndex === -1) {
+      return { displayContent: content, processedResponse: null };
+    }
+
+    try {
+      const markerEnd = content.indexOf("]]", markerIndex);
+      const jsonStr = content.slice(
+        markerIndex + "[[PROCESSED_RESPONSE:".length,
+        markerEnd
+      );
+      const processedResponse = JSON.parse(jsonStr);
+      const displayContent = content.slice(0, markerIndex).trim();
+
+      return { displayContent, processedResponse };
+    } catch (error) {
+      console.error("Error parsing processed response:", error);
+      return { displayContent: content, processedResponse: null };
+    }
+  };
+
+  const handleViewClick = (processedResponse: ProcessedResponse) => {
+    if (onViewClick) {
+      localStorage.setItem(
+        "processedResponse",
+        JSON.stringify(processedResponse)
+      );
+      onViewClick();
+    }
+  };
+
+  const renderMessage = (message: Message) => {
+    const { displayContent, processedResponse } = extractProcessedResponse(
+      message.content
+    );
+
+    return (
+      <div
+        key={message.id}
+        className={cn(
+          "flex items-start space-x-3",
+          message.role === "user" ? "justify-end" : "justify-start"
+        )}
+      >
+        {(message.role === "assistant" || message.role === "system") && (
+          <div className="flex items-start space-x-2">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            {processedResponse && (
+              <button
+                onClick={() => handleViewClick(processedResponse)}
+                className="flex items-center space-x-1 px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span>View</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "flex flex-col max-w-[70%] space-y-2",
+            message.role === "user" ? "items-end" : "items-start"
+          )}
+        >
+          <div
+            className={cn(
+              "rounded-2xl px-4 py-2",
+              message.role === "user"
+                ? "bg-blue-500 text-white"
+                : "bg-white border shadow-sm"
+            )}
+          >
+            <ReactMarkdown
+              className={cn(
+                "prose prose-sm max-w-none",
+                message.role === "user" ? "text-white" : "text-gray-900"
+              )}
+            >
+              {displayContent}
+            </ReactMarkdown>
+          </div>
+        </div>
+
+        {message.role === "user" && (
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+              <User className="w-5 h-5 text-gray-600" />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -63,59 +146,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex items-start space-x-3",
-                message.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              {(message.role === "assistant" || message.role === "system") && (
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-blue-600" />
-                  </div>
-                </div>
-              )}
-
-              <div
-                className={cn(
-                  "flex flex-col max-w-[70%] space-y-2",
-                  message.role === "user" ? "items-end" : "items-start"
-                )}
-              >
-                <div
-                  className={cn(
-                    "rounded-2xl px-4 py-2",
-                    message.role === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-white border shadow-sm"
-                  )}
-                >
-                  <ReactMarkdown
-                    className={cn(
-                      "prose prose-sm max-w-none",
-                      message.role === "user" ? "text-white" : "text-gray-900"
-                    )}
-                    components={{
-                      code: CodeComponent, // Use the correctly typed CodeComponent
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
-
-              {message.role === "user" && (
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-600" />
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+          {messages.map(renderMessage)}
           {isLoading && (
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
